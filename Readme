@@ -22,5 +22,7 @@ Controls
 Phone:    left stick = altitude, right stick = move, RESET
 Keyboard: W/S = altitude, arrows = move, R = reset (works without Supabase)
 
-Goal: take off from the quay, fly through the three rings (+100 each), land gently on the
-green pad (+100). Touching the sea costs 50 and sends you back to the quay.
+Goal: take off from the green pad, fly through the three rings (+100 each) and land gently
+back on the pad (+100, plus a point per second left) before the 60-second clock runs out.
+Touching the sea costs 50 and sends you back to the pad. Let go of the sticks and the real
+Trincomalee wind carries the drone the way the arrow points.

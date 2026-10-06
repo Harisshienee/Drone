@@ -6,15 +6,15 @@ import './styles.css'
 
 // World layout. +X is east, -Z is north (away from the camera), Y is up.
 const REST_HEIGHT = 0.3 // drone centre height when sitting on a surface
-const START = new THREE.Vector3(0, REST_HEIGHT, 10)
-const DECK = { minX: -12, maxX: 12, minZ: 4, maxZ: 16 }
-const PAD = new THREE.Vector3(0, 0, -14)
+const DECK = { minX: -12, maxX: 12, minZ: 6, maxZ: 18 }
+const PAD = new THREE.Vector3(0, 0, 0)
+const START = new THREE.Vector3(PAD.x, REST_HEIGHT, PAD.z) // every round begins on the pad
 const PAD_RADIUS = 2.5
 const RING_RADIUS = 1.8
 const RING_POSITIONS = [
-  new THREE.Vector3(-4, 4, -1),
-  new THREE.Vector3(4, 6, -6),
-  new THREE.Vector3(0, 3.5, -10),
+  new THREE.Vector3(-4, 4, -6),
+  new THREE.Vector3(4, 6, -12),
+  new THREE.Vector3(0, 3.5, -18),
 ]
 const BOUNDS = 30
 const CEILING = 25
@@ -23,10 +23,15 @@ const CEILING = 25
 const MOVE_ACCEL = 8
 const CLIMB_ACCEL = 6
 const DRAG = 1.2 // per second
-const WIND_FORCE = 0.05 // m/s² per km/h — deliberately small so real gusts stay flyable
+// Wind push in m/s²: a small base so even a light breeze drifts visibly, plus a gentle
+// per-km/h term so real gusts stay flyable
+const WIND_BASE = 0.6
+const WIND_FORCE = 0.06
 const MAX_WIND_KMH = 60
 const SAFE_LANDING_SPEED = 2
 const PHONE_TIMEOUT_MS = 1000
+const ROUND_SECONDS = 60
+const TAKEOFF_HEIGHT = 1 // must climb this far above the pad before a landing counts
 
 // ---------- Scene ----------
 
@@ -162,7 +167,9 @@ async function refreshWind() {
     // The API reports where the wind comes FROM; the drone is pushed the opposite way
     const radians = THREE.MathUtils.degToRad(wind.direction)
     const push = new THREE.Vector3(-Math.sin(radians), 0, Math.cos(radians))
-    windAccel.copy(push).multiplyScalar(Math.min(wind.speed, MAX_WIND_KMH) * WIND_FORCE)
+    const strength =
+      wind.speed > 0 ? WIND_BASE + Math.min(wind.speed, MAX_WIND_KMH) * WIND_FORCE : 0
+    windAccel.copy(push).multiplyScalar(strength)
 
     windSpeedEl.textContent = `${wind.speed.toFixed(0)} km/h`
     windFromEl.textContent = `from ${compass(wind.direction)} (${wind.direction.toFixed(0)}°)`
@@ -214,16 +221,19 @@ const keyAxis = (positive: string, negative: string) =>
 
 const velocity = new THREE.Vector3()
 let score = 0
-let landed = false
+let over = false // landed or out of time; frozen until reset
+let airborne = false // has left the pad, so touching it again is a landing
 let startedAt: number | null = null
-let finalTime = 0
+let remaining = ROUND_SECONDS
 
 function reset() {
   drone.position.copy(START)
   velocity.set(0, 0, 0)
   score = 0
-  landed = false
+  over = false
+  airborne = false
   startedAt = null
+  remaining = ROUND_SECONDS
   for (const ring of rings) {
     ring.collected = false
     ring.mesh.material.color.set(0xffa726)
@@ -256,7 +266,16 @@ function update(dt: number, now: number) {
         : 'Connecting…'
   linkEl.style.color = phoneLive ? '#7CFC8A' : ''
 
-  if (!landed) {
+  if (!over && startedAt !== null) {
+    remaining = Math.max(0, ROUND_SECONDS - (now - startedAt) / 1000)
+    if (remaining === 0) {
+      over = true
+      velocity.set(0, 0, 0)
+      showMessage('TIME UP\nRESET TO PLAY AGAIN')
+    }
+  }
+
+  if (!over) {
     // A phone that has gone quiet counts as sticks released
     const leftY = axis((phoneLive ? phone.leftY : 0) + keyAxis('KeyW', 'KeyS'))
     const rightX = axis((phoneLive ? phone.rightX : 0) + keyAxis('ArrowRight', 'ArrowLeft'))
@@ -285,6 +304,7 @@ function update(dt: number, now: number) {
     position.y = Math.min(position.y, CEILING)
 
     if (startedAt === null && position.y > REST_HEIGHT + 0.05) startedAt = now
+    if (position.y > REST_HEIGHT + TAKEOFF_HEIGHT) airborne = true
 
     for (const ring of rings) {
       if (ring.collected) continue
@@ -306,13 +326,14 @@ function update(dt: number, now: number) {
         const impact = velocity.length()
         position.y = REST_HEIGHT
         const onPad = distanceToPad(position) < PAD_RADIUS - 0.5
-        if (onPad && impact < SAFE_LANDING_SPEED) {
-          landed = true
-          finalTime = startedAt === null ? 0 : (now - startedAt) / 1000
+        if (onPad && airborne && impact < SAFE_LANDING_SPEED) {
+          over = true
           velocity.set(0, 0, 0)
-          score += 100
-          showMessage('LANDED!\n+100')
-        } else if (onPad) {
+          // 100 for the landing plus a point per second left on the clock
+          const points = 100 + Math.floor(remaining)
+          score += points
+          showMessage(`LANDED!\n+${points}`)
+        } else if (onPad && airborne) {
           velocity.set(0, 1.5, 0)
           showMessage('TOO FAST — EASE DOWN', 1200)
         } else {
@@ -320,22 +341,22 @@ function update(dt: number, now: number) {
         }
       }
     } else if (position.y <= -0.3) {
-      // In the sea: lose points and go back to the quay, clock keeps running
+      // In the sea: lose points and go back to the pad, clock keeps running
       score = Math.max(0, score - 50)
       position.copy(START)
       velocity.set(0, 0, 0)
+      airborne = false
       showMessage('SPLASH! −50', 1500)
     }
   }
 
-  const elapsed = landed ? finalTime : startedAt === null ? 0 : (now - startedAt) / 1000
   scoreEl.textContent = String(score)
-  timeEl.textContent = elapsed.toFixed(1)
+  timeEl.textContent = remaining.toFixed(1)
 
   // Lean into the direction of travel, spin the rotors
   drone.rotation.z = -velocity.x * 0.05
   drone.rotation.x = velocity.z * 0.05
-  if (!landed) for (const rotor of rotors) rotor.rotation.y += 40 * dt
+  if (!over) for (const rotor of rotors) rotor.rotation.y += 40 * dt
 
   windArrow.position.copy(drone.position).setY(drone.position.y + 1)
 

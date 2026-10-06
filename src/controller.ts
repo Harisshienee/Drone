@@ -73,12 +73,15 @@ if (channel) {
 // 20 messages/second while flying; a slower heartbeat when idle so the laptop knows we're here
 const HEARTBEAT_MS = 300
 let lastSent = 0
+let wasIdle = true
 
 setInterval(() => {
   if (!channel || !connected) return
   const idle = controls.leftY === 0 && controls.rightX === 0 && controls.rightY === 0
   const now = performance.now()
-  if (idle && now - lastSent < HEARTBEAT_MS) return
+  // The first zero after a release must go out at once, or the drone keeps flying on stale input
+  if (idle && wasIdle && now - lastSent < HEARTBEAT_MS) return
+  wasIdle = idle
   lastSent = now
   channel.send({ type: 'broadcast', event: 'control', payload: controls })
 }, 50)
