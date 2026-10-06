@@ -121,7 +121,15 @@ const rotors: THREE.Mesh[] = []
 scene.add(drone)
 
 // Rides above the drone and points the way the wind is pushing it
-const windArrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), drone.position, 1, 0xffffff)
+// Built pointing along +Y, then rotated onto the wind direction
+const windArrow = new THREE.Group()
+const windArrowMaterial = new THREE.MeshBasicMaterial({ color: 0xffeb3b })
+const windArrowShaft = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.07, 0.07, 1, 12).translate(0, 0.5, 0),
+  windArrowMaterial,
+)
+const windArrowHead = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 16), windArrowMaterial)
+windArrow.add(windArrowShaft, windArrowHead)
 windArrow.visible = false
 scene.add(windArrow)
 
@@ -177,8 +185,10 @@ async function refreshWind() {
     windArrowEl.style.transform = `rotate(${wind.direction + 180}deg)`
 
     windArrow.visible = wind.speed > 0
-    windArrow.setDirection(push)
-    windArrow.setLength(1 + wind.speed * 0.06, 0.4, 0.25)
+    windArrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), push)
+    const shaftLength = 1.2 + Math.min(wind.speed, MAX_WIND_KMH) * 0.05
+    windArrowShaft.scale.y = shaftLength
+    windArrowHead.position.y = shaftLength + 0.3
   } catch (error) {
     console.error(error)
     // Keep flying on the last known wind; only say so if we never got a reading
@@ -358,7 +368,7 @@ function update(dt: number, now: number) {
   drone.rotation.x = velocity.z * 0.05
   if (!over) for (const rotor of rotors) rotor.rotation.y += 40 * dt
 
-  windArrow.position.copy(drone.position).setY(drone.position.y + 1)
+  windArrow.position.copy(drone.position).setY(drone.position.y + 0.9)
 
   camera.position.lerp(drone.position.clone().add(CAMERA_OFFSET), 1 - Math.exp(-4 * dt))
   camera.lookAt(drone.position)

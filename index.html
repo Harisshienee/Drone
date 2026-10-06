@@ -14,7 +14,12 @@
     <div class="hud top-right">
       <div class="label">LIVE WIND · TRINCOMALEE</div>
       <div class="wind">
-        <span id="wind-arrow">↑</span>
+        <span class="compass">
+          <span class="north">N</span>
+          <svg id="wind-arrow" viewBox="0 0 48 48" width="48" height="48">
+            <path d="M24 4 L36 22 H28 V44 H20 V22 H12 Z" fill="#ffeb3b" />
+          </svg>
+        </span>
         <span>
           <div id="wind-speed">-- km/h</div>
           <div id="wind-from" class="label">loading…</div>
