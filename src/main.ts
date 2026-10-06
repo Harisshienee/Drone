@@ -2,20 +2,27 @@ import * as THREE from 'three'
 import QRCode from 'qrcode'
 import { channel, type Controls } from './realtime'
 import { compass, fetchWind } from './wind'
+import {
+  CAMERA_OFFSET,
+  DECK,
+  PAD,
+  PAD_RADIUS,
+  REST_HEIGHT,
+  RING_RADIUS,
+  START,
+  animateWorld,
+  camera,
+  drone,
+  renderer,
+  rings,
+  rotors,
+  scene,
+  windArrow,
+  windArrowHead,
+  windArrowShaft,
+} from './world'
 import './styles.css'
 
-// World layout. +X is east, -Z is north (away from the camera), Y is up.
-const REST_HEIGHT = 0.3 // drone centre height when sitting on a surface
-const DECK = { minX: -12, maxX: 12, minZ: 6, maxZ: 18 }
-const PAD = new THREE.Vector3(0, 0, 0)
-const START = new THREE.Vector3(PAD.x, REST_HEIGHT, PAD.z) // every round begins on the pad
-const PAD_RADIUS = 2.5
-const RING_RADIUS = 1.8
-const RING_POSITIONS = [
-  new THREE.Vector3(-4, 4, -6),
-  new THREE.Vector3(4, 6, -12),
-  new THREE.Vector3(0, 3.5, -18),
-]
 const BOUNDS = 30
 const CEILING = 25
 
@@ -33,118 +40,12 @@ const PHONE_TIMEOUT_MS = 1000
 const ROUND_SECONDS = 60
 const TAKEOFF_HEIGHT = 1 // must climb this far above the pad before a landing counts
 
-// ---------- Scene ----------
-
-const renderer = new THREE.WebGLRenderer({ antialias: true })
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.domElement.className = 'scene'
-document.body.prepend(renderer.domElement)
-
-const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x9fd3f0)
-scene.fog = new THREE.Fog(0x9fd3f0, 40, 140)
-
-const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400)
-const CAMERA_OFFSET = new THREE.Vector3(0, 5, 9)
-
-scene.add(new THREE.HemisphereLight(0xffffff, 0x1b4f72, 1.6))
-const sun = new THREE.DirectionalLight(0xffffff, 1.8)
-sun.position.set(10, 20, 8)
-scene.add(sun)
-
-const sea = new THREE.Mesh(
-  new THREE.PlaneGeometry(400, 400),
-  new THREE.MeshStandardMaterial({ color: 0x1565c0, roughness: 0.4 }),
-)
-sea.rotation.x = -Math.PI / 2
-sea.position.y = -0.6
-scene.add(sea)
-
-const deck = new THREE.Mesh(
-  new THREE.BoxGeometry(DECK.maxX - DECK.minX, 0.6, DECK.maxZ - DECK.minZ),
-  new THREE.MeshStandardMaterial({ color: 0x7d8590 }),
-)
-deck.position.set((DECK.minX + DECK.maxX) / 2, -0.3, (DECK.minZ + DECK.maxZ) / 2)
-scene.add(deck)
-
-const pad = new THREE.Mesh(
-  new THREE.CylinderGeometry(PAD_RADIUS, PAD_RADIUS, 0.6, 40),
-  new THREE.MeshStandardMaterial({ color: 0x2e7d32 }),
-)
-pad.position.set(PAD.x, -0.3, PAD.z)
-scene.add(pad)
-
-const padMarker = new THREE.Mesh(
-  new THREE.RingGeometry(1.3, 1.6, 40),
-  new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }),
-)
-padMarker.rotation.x = -Math.PI / 2
-padMarker.position.set(PAD.x, 0.01, PAD.z)
-scene.add(padMarker)
-
-const rings = RING_POSITIONS.map((position) => {
-  // A torus lies in the XY plane by default, so the drone flies through it along Z
-  const mesh = new THREE.Mesh(
-    new THREE.TorusGeometry(RING_RADIUS, 0.12, 12, 48),
-    new THREE.MeshStandardMaterial({ color: 0xffa726, emissive: 0xffa726, emissiveIntensity: 0.5 }),
-  )
-  mesh.position.copy(position)
-  scene.add(mesh)
-  return { mesh, collected: false }
-})
-
-const drone = new THREE.Group()
-const rotors: THREE.Mesh[] = []
-{
-  const dark = new THREE.MeshStandardMaterial({ color: 0x263238 })
-  drone.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.5), dark))
-  for (const angle of [Math.PI / 4, -Math.PI / 4]) {
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 0.08), dark)
-    arm.rotation.y = angle
-    drone.add(arm)
-  }
-  const rotorMaterial = new THREE.MeshStandardMaterial({ color: 0xeceff1 })
-  for (const [x, z] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-    const rotor = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.02, 0.06), rotorMaterial)
-    rotor.position.set(x * 0.5, 0.08, z * 0.5)
-    drone.add(rotor)
-    rotors.push(rotor)
-  }
-  // Red nose so the pilot can tell which way is forward
-  const nose = new THREE.Mesh(
-    new THREE.BoxGeometry(0.16, 0.1, 0.12),
-    new THREE.MeshStandardMaterial({ color: 0xe53935 }),
-  )
-  nose.position.z = -0.3
-  drone.add(nose)
-}
-scene.add(drone)
-
-// Rides above the drone and points the way the wind is pushing it
-// Built pointing along +Y, then rotated onto the wind direction
-const windArrow = new THREE.Group()
-const windArrowMaterial = new THREE.MeshBasicMaterial({ color: 0xffeb3b })
-const windArrowShaft = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.07, 0.07, 1, 12).translate(0, 0.5, 0),
-  windArrowMaterial,
-)
-const windArrowHead = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 16), windArrowMaterial)
-windArrow.add(windArrowShaft, windArrowHead)
-windArrow.visible = false
-scene.add(windArrow)
-
-function resize() {
-  renderer.setSize(window.innerWidth, window.innerHeight)
-  camera.aspect = window.innerWidth / window.innerHeight
-  camera.updateProjectionMatrix()
-}
-window.addEventListener('resize', resize)
-resize()
-
 // ---------- HUD ----------
 
 const scoreEl = document.getElementById('score')!
 const timeEl = document.getElementById('time')!
+const altEl = document.getElementById('alt')!
+const speedEl = document.getElementById('speed')!
 const messageEl = document.getElementById('message')!
 const linkEl = document.getElementById('link')!
 const windArrowEl = document.getElementById('wind-arrow')!
@@ -188,7 +89,7 @@ async function refreshWind() {
     windArrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), push)
     const shaftLength = 1.2 + Math.min(wind.speed, MAX_WIND_KMH) * 0.05
     windArrowShaft.scale.y = shaftLength
-    windArrowHead.position.y = shaftLength + 0.3
+    windArrowHead.position.y = shaftLength + 0.27
   } catch (error) {
     console.error(error)
     // Keep flying on the last known wind; only say so if we never got a reading
@@ -362,6 +263,8 @@ function update(dt: number, now: number) {
 
   scoreEl.textContent = String(score)
   timeEl.textContent = remaining.toFixed(1)
+  altEl.textContent = (drone.position.y - REST_HEIGHT).toFixed(1)
+  speedEl.textContent = velocity.length().toFixed(1)
 
   // Lean into the direction of travel, spin the rotors
   drone.rotation.z = -velocity.x * 0.05
@@ -371,7 +274,7 @@ function update(dt: number, now: number) {
   windArrow.position.copy(drone.position).setY(drone.position.y + 0.9)
 
   camera.position.lerp(drone.position.clone().add(CAMERA_OFFSET), 1 - Math.exp(-4 * dt))
-  camera.lookAt(drone.position)
+  camera.lookAt(drone.position.x, drone.position.y + 1.2, drone.position.z)
 }
 
 reset()
@@ -384,5 +287,6 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min((now - last) / 1000, 0.05)
   last = now
   update(dt, now)
+  animateWorld(dt)
   renderer.render(scene, camera)
 })

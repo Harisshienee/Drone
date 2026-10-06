@@ -4,20 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Harbour Drone</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body class="world">
+    <div class="vignette"></div>
+
     <div class="hud top-left">
       <h1>HARBOUR DRONE</h1>
+      <div class="label">TRINCOMALEE · 8.59°N 81.22°E</div>
       <div id="link">Connecting…</div>
     </div>
 
     <div class="hud top-right">
-      <div class="label">LIVE WIND · TRINCOMALEE</div>
+      <div class="label">LIVE WIND</div>
       <div class="wind">
         <span class="compass">
           <span class="north">N</span>
-          <svg id="wind-arrow" viewBox="0 0 48 48" width="48" height="48">
-            <path d="M24 4 L36 22 H28 V44 H20 V22 H12 Z" fill="#ffeb3b" />
+          <svg id="wind-arrow" viewBox="0 0 48 48" width="44" height="44">
+            <path d="M24 4 L36 22 H28 V44 H20 V22 H12 Z" fill="#ffd54a" />
           </svg>
         </span>
         <span>
@@ -31,17 +40,21 @@
 
     <div class="hud bottom-left">
       <canvas id="qr"></canvas>
-      <div class="label">Scan to fly</div>
+      <div class="label">SCAN TO FLY</div>
       <div id="controller-url" class="label"></div>
     </div>
 
     <div class="hud bottom-centre">
-      <span>SCORE <b id="score">0</b></span>
-      <span>TIME <b id="time">0.0</b></span>
+      <div class="stat"><span class="label">SCORE</span><b id="score">0</b></div>
+      <div class="stat"><span class="label">TIME</span><b id="time">60.0</b></div>
     </div>
 
-    <div class="hud bottom-right label">
-      Keyboard: W/S altitude · arrows move · R reset
+    <div class="hud bottom-right">
+      <div class="telemetry">
+        <div class="stat"><span class="label">ALT m</span><b id="alt">0.0</b></div>
+        <div class="stat"><span class="label">SPD m/s</span><b id="speed">0.0</b></div>
+      </div>
+      <div class="label hint">W/S altitude · arrows move · R reset</div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
