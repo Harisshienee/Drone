@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Harbour Drone</title>
+  </head>
+  <body class="world">
+    <div class="hud top-left">
+      <h1>HARBOUR DRONE</h1>
+      <div id="link">Connecting…</div>
+    </div>
+
+    <div class="hud top-right">
+      <div class="label">LIVE WIND · TRINCOMALEE</div>
+      <div class="wind">
+        <span id="wind-arrow">↑</span>
+        <span>
+          <div id="wind-speed">-- km/h</div>
+          <div id="wind-from" class="label">loading…</div>
+        </span>
+      </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="hud bottom-left">
+      <canvas id="qr"></canvas>
+      <div class="label">Scan to fly</div>
+      <div id="controller-url" class="label"></div>
+    </div>
+
+    <div class="hud bottom-centre">
+      <span>SCORE <b id="score">0</b></span>
+      <span>TIME <b id="time">0.0</b></span>
+    </div>
+
+    <div class="hud bottom-right label">
+      Keyboard: W/S altitude · arrows move · R reset
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

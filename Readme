@@ -1,0 +1,26 @@
+Harbour Drone
+=============
+
+Laptop shows a 3D harbour; a phone flies the drone over the internet; real Trincomalee wind pushes it.
+
+  /             laptop world (Three.js)
+  /controller/  phone controller (two touch sticks + reset)
+
+Setup
+-----
+1. npm install
+2. Create a Supabase project, copy .env.example to .env and fill in the URL and anon key.
+3. npm run dev        (laptop: http://localhost:5173/)
+
+Deploy
+------
+npx vercel --prod, with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY set as environment
+variables in the Vercel project. Open the site on the laptop and scan the QR code with the phone.
+
+Controls
+--------
+Phone:    left stick = altitude, right stick = move, RESET
+Keyboard: W/S = altitude, arrows = move, R = reset (works without Supabase)
+
+Goal: take off from the quay, fly through the three rings (+100 each), land gently on the
+green pad (+100). Touching the sea costs 50 and sends you back to the quay.

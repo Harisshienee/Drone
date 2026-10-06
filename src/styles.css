@@ -1,0 +1,197 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #fff;
+  background: #0b2540;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+}
+
+.label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+/* ---------- Laptop world ---------- */
+
+.world canvas.scene {
+  position: fixed;
+  inset: 0;
+  display: block;
+}
+
+.hud {
+  position: fixed;
+  padding: 12px 16px;
+  background: rgba(8, 24, 44, 0.6);
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+
+.top-left {
+  top: 16px;
+  left: 16px;
+}
+
+.top-right {
+  top: 16px;
+  right: 16px;
+  text-align: right;
+}
+
+.bottom-left {
+  bottom: 16px;
+  left: 16px;
+  text-align: center;
+}
+
+.bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+.bottom-centre {
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 32px;
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+}
+
+.wind {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+#wind-arrow {
+  display: inline-block;
+  font-size: 2.4rem;
+  line-height: 1;
+  transition: transform 0.5s;
+}
+
+#wind-speed {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+#link {
+  margin-top: 4px;
+  font-size: 0.85rem;
+}
+
+#qr {
+  display: block;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+#message {
+  position: fixed;
+  top: 28%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+/* ---------- Phone controller ---------- */
+
+.controller {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.controller header {
+  text-align: center;
+}
+
+#status {
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+.controller main {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+}
+
+.controller section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.stick {
+  position: relative;
+  width: min(40vw, 46vh);
+  height: min(40vw, 46vh);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  touch-action: none;
+}
+
+.knob {
+  position: absolute;
+  top: 30%;
+  left: 30%;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: #fff;
+  pointer-events: none;
+}
+
+output {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+#reset {
+  width: 60%;
+  max-width: 320px;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: #c62828;
+  border: 0;
+  border-radius: 10px;
+}
+
+#reset:active {
+  background: #8e1c1c;
+}

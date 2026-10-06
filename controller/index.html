@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Harbour Drone Controller</title>
+  </head>
+  <body class="controller">
+    <header>
+      <h1>HARBOUR DRONE</h1>
+      <div id="status">Connecting…</div>
+    </header>
+
+    <main>
+      <section>
+        <div class="stick" id="left"><div class="knob"></div></div>
+        <div class="label">ALTITUDE</div>
+        <output id="left-value">Y: 0.00</output>
+      </section>
+      <section>
+        <div class="stick" id="right"><div class="knob"></div></div>
+        <div class="label">MOVE</div>
+        <output id="right-value">X: 0.00 Y: 0.00</output>
+      </section>
+    </main>
+
+    <button id="reset">RESET</button>
+
+    <script type="module" src="/src/controller.ts"></script>
+  </body>
+</html>
