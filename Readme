@@ -6,6 +6,12 @@ Laptop shows a 3D harbour; a phone flies the drone over the internet; real Trinc
   /             laptop world (Three.js)
   /controller/  phone controller (two touch sticks + reset)
 
+Links
+-----
+Play (laptop):      https://harbour-drone.vercel.app/
+Controller (phone): https://harbour-drone.vercel.app/controller/
+Source:             https://github.com/Harisshienee/Drone
+
 Setup
 -----
 1. npm install
