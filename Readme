@@ -9,8 +9,16 @@ Laptop shows a 3D harbour; a phone flies the drone over the internet; real Trinc
 Setup
 -----
 1. npm install
-2. Create a Supabase project, copy .env.example to .env and fill in the URL and anon key.
+2. Create a Supabase project, copy .env.example to .env and fill in the URL and anon key
+   (anon / publishable key only, never the service-role key).
 3. npm run dev        (laptop: http://localhost:5173/)
+
+The QR code points at /controller/ on whatever address the laptop page was opened with, so
+to fly from a phone before deploying, open the "Network" URL that Vite prints (same Wi-Fi)
+instead of localhost. Without Supabase keys the world still runs on the keyboard alone.
+
+  npm run build       type-check and build to dist/
+  npm run preview     serve the built site locally
 
 Deploy
 ------
@@ -22,7 +30,55 @@ Controls
 Phone:    left stick = altitude, right stick = move, RESET
 Keyboard: W/S = altitude, arrows = move, R = reset (works without Supabase)
 
-Goal: take off from the green pad, fly through the three rings (+100 each) and land gently
+Up on the right stick (or the up arrow) flies north, away from the camera.
+
+Game
+----
+Goal: take off from the helipad, fly through the three rings (+100 each) and land gently
 back on the pad (+100, plus a point per second left) before the 60-second clock runs out.
-Touching the sea costs 50 and sends you back to the pad. Let go of the sticks and the real
-Trincomalee wind carries the drone the way the arrow points.
+
+- The clock starts when the drone lifts off, not when the page loads.
+- Rings count when flown through north-south, in either direction, and turn green.
+- A landing only counts after climbing at least 1 m, and must be slower than 2 m/s near
+  the middle of the pad. Come in faster and the drone bounces: "TOO FAST - EASE DOWN".
+- Touching the sea costs 50 and sends you back to the pad; the clock keeps running.
+- The flying area is 30 m each way from the pad with a 25 m ceiling.
+- After landing or running out of time the round is frozen until RESET, which also
+  clears the score.
+
+Wind
+----
+Current wind speed and direction for Trincomalee harbour (8.59N 81.22E) come from
+Open-Meteo, refreshed every minute; no API key needed. Let go of the sticks and the wind
+carries the drone. A drone sitting on the pad is not moved.
+
+The compass in the top-right corner and the yellow arrow above the drone both point the way
+the wind is pushing, and the arrow above the drone grows with wind speed. If the wind can't
+be fetched the drone keeps flying on the last reading.
+
+HUD
+---
+Top left:      phone link status
+Top right:     live wind compass, speed and direction
+Bottom left:   QR code and URL for the phone controller
+Bottom centre: score and time left
+Bottom right:  altitude (m) and speed (m/s)
+
+How it works
+------------
+The phone broadcasts its stick positions on a Supabase Realtime channel, 20 times a second
+while flying and a slower heartbeat when idle. The laptop runs all the physics and treats a
+phone that has been quiet for a second as sticks released. Every laptop and phone using the
+same Supabase project shares the one channel, so run one game at a time per project.
+
+  index.html             laptop page and HUD
+  controller/index.html  phone page
+  src/main.ts            input, physics, scoring, HUD updates
+  src/world.ts           scene: sky, sea, quay, helipad, rings, drone, wind arrow
+  src/controller.ts      touch sticks and broadcasting
+  src/realtime.ts        Supabase channel (null when the keys are missing)
+  src/wind.ts            Open-Meteo fetch and compass names
+  src/styles.css         styles for both pages
+
+Flight feel (acceleration, drag, wind strength, round length, landing speed) is set by the
+constants at the top of src/main.ts; ring and pad positions are at the top of src/world.ts.
